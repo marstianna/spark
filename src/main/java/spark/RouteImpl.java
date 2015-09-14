@@ -18,18 +18,47 @@ package spark;
 
 
 /**
- * A Route is built up by a path (for url-matching) and the implementation of the 'handle' method.
- * When a request is made, if present, the matching routes 'handle' method is invoked. The object
- * that is returned from 'handle' will be set to the response body (toString()).
+ * RouteImpl is created from a path, acceptType and Route. This is encapsulate the information needed in the route
+ * matcher in a single container.
  *
  * @author Per Wendel
  */
 public abstract class RouteImpl implements Route {
-
-    private static final String DEFAULT_ACCEPT_TYPE = "*/*";
+    static final String DEFAULT_ACCEPT_TYPE = "*/*";
 
     private String path;
     private String acceptType;
+
+    /**
+     * Wraps the route in RouteImpl
+     *
+     * @param path  the path
+     * @param route the route
+     * @return the wrapped route
+     */
+    static RouteImpl create(final String path, final Route route) {
+        return create(path, DEFAULT_ACCEPT_TYPE, route);
+    }
+
+    /**
+     * Wraps the route in RouteImpl
+     *
+     * @param path       the path
+     * @param acceptType the accept type
+     * @param route      the route
+     * @return the wrapped route
+     */
+    static RouteImpl create(final String path, String acceptType, final Route route) {
+        if (acceptType == null) {
+            acceptType = DEFAULT_ACCEPT_TYPE;
+        }
+        return new RouteImpl(path, acceptType) {
+            @Override
+            public Object handle(Request request, Response response) throws Exception {
+                return route.handle(request, response);
+            }
+        };
+    }
 
     /**
      * Constructor
@@ -69,10 +98,9 @@ public abstract class RouteImpl implements Route {
      * @return body content.
      * @throws java.lang.Exception when render fails
      */
-    //TODO change String return type to Stream. It should be done in another issue.
-    public String render(Object element) throws Exception {
+    public Object render(Object element) throws Exception {
         if (element != null) {
-            return element.toString();
+            return element;
         } else {
             return null;
         }

@@ -21,9 +21,11 @@ import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
+import spark.Access;
 import spark.QueryParamsMap;
 import spark.Request;
 import spark.Session;
+import spark.routematch.RouteMatch;
 
 final class RequestWrapper extends Request {
 
@@ -35,6 +37,10 @@ final class RequestWrapper extends Request {
 
     Request getDelegate() {
         return delegate;
+    }
+
+    public void changeMatch(RouteMatch match) {
+        Access.changeMatch(delegate, match);
     }
 
     @Override
@@ -76,7 +82,7 @@ final class RequestWrapper extends Request {
     public String body() {
         return delegate.body();
     }
-    
+
     @Override
     public byte[] bodyAsBytes() {
         return delegate.bodyAsBytes();
@@ -125,6 +131,11 @@ final class RequestWrapper extends Request {
     @Override
     public String queryParams(String queryParam) {
         return delegate.queryParams(queryParam);
+    }
+
+    @Override
+    public String[] queryParamsValues(String queryParam) {
+        return delegate.queryParamsValues(queryParam);
     }
 
     @Override
@@ -183,7 +194,7 @@ final class RequestWrapper extends Request {
     }
 
     @Override
-    public Object attribute(String attribute) {
+    public <T> T attribute(String attribute) {
         return delegate.attribute(attribute);
     }
 

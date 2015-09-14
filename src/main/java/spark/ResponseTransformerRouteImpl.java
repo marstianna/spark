@@ -29,7 +29,7 @@ package spark;
 public abstract class ResponseTransformerRouteImpl extends RouteImpl {
 
     public static ResponseTransformerRouteImpl create(String path, Route route, ResponseTransformer transformer) {
-        return create(path, SparkBase.DEFAULT_ACCEPT_TYPE, route, transformer);
+        return create(path, SparkInstance.DEFAULT_ACCEPT_TYPE, route, transformer);
     }
 
     public static ResponseTransformerRouteImpl create(String path,
@@ -38,7 +38,7 @@ public abstract class ResponseTransformerRouteImpl extends RouteImpl {
                                                       ResponseTransformer transformer) {
         return new ResponseTransformerRouteImpl(path, acceptType) {
             @Override
-            public String render(Object model) throws Exception {
+            public Object render(Object model) throws Exception {
                 return transformer.render(model);
             }
 
@@ -59,6 +59,6 @@ public abstract class ResponseTransformerRouteImpl extends RouteImpl {
      * @param model object used to render output.
      * @return message that it is sent to client.
      */
-    public abstract String render(Object model) throws Exception;
+    public abstract Object render(Object model) throws Exception;
 
 }

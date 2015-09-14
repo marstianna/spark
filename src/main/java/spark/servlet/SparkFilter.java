@@ -17,8 +17,6 @@
 package spark.servlet;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -32,14 +30,11 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import spark.Access;
+import spark.globalstate.ServletFlag;
 import spark.resource.AbstractFileResolvingResource;
 import spark.resource.AbstractResourceHandler;
-import spark.resource.ClassPathResource;
-import spark.resource.ClassPathResourceHandler;
-import spark.resource.ExternalResource;
-import spark.resource.ExternalResourceHandler;
 import spark.route.RouteMatcherFactory;
+import spark.staticfiles.ServletStaticFiles;
 import spark.utils.IOUtils;
 import spark.webserver.MatcherFilter;
 
@@ -55,19 +50,15 @@ public class SparkFilter implements Filter {
 
     public static final String APPLICATION_CLASS_PARAM = "applicationClass";
 
-    private static List<AbstractResourceHandler> staticResourceHandlers = null;
-
-    private static boolean staticResourcesSet = false;
-    private static boolean externalStaticResourcesSet = false;
-
     private String filterPath;
     private MatcherFilter matcherFilter;
+    private SparkApplication application;
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        Access.runFromServlet();
+        ServletFlag.runFromServlet();
 
-        final SparkApplication application = getApplication(filterConfig);
+        application = getApplication(filterConfig);
         application.init();
 
         filterPath = FilterTools.getFilterPath(filterConfig);
@@ -107,17 +98,22 @@ public class SparkFilter implements Filter {
 
         HttpServletRequestWrapper requestWrapper = new HttpServletRequestWrapper(httpRequest) {
             @Override
+            public String getPathInfo() {
+                return relativePath;
+            }
+
+            @Override
             public String getRequestURI() {
                 return relativePath;
             }
         };
 
         // handle static resources
-        if (staticResourceHandlers != null) {
-            for (AbstractResourceHandler staticResourceHandler : staticResourceHandlers) {
+        if (ServletStaticFiles.staticResourceHandlers() != null) {
+            for (AbstractResourceHandler staticResourceHandler : ServletStaticFiles.staticResourceHandlers()) {
                 AbstractFileResolvingResource resource = staticResourceHandler.getResource(httpRequest);
                 if (resource != null && resource.isReadable()) {
-                    IOUtils.copy(resource.getInputStream(), response.getWriter());
+                    IOUtils.copy(resource.getInputStream(), response.getOutputStream());
                     return;
                 }
             }
@@ -126,63 +122,11 @@ public class SparkFilter implements Filter {
         matcherFilter.doFilter(requestWrapper, response, chain);
     }
 
-    /**
-     * Configures location for static resources
-     *
-     * @param folder the location
-     */
-    public static void configureStaticResources(String folder) {
-        if (!staticResourcesSet) {
-            if (folder != null) {
-                try {
-                    ClassPathResource resource = new ClassPathResource(folder);
-                    if (resource.getFile().isDirectory()) {
-                        if (staticResourceHandlers == null) {
-                            staticResourceHandlers = new ArrayList<>();
-                        }
-                        staticResourceHandlers.add(new ClassPathResourceHandler(folder, "index.html"));
-                        LOG.info("StaticResourceHandler configured with folder = " + folder);
-                    } else {
-                        LOG.error("Static resource location must be a folder");
-                    }
-                } catch (IOException e) {
-                    LOG.error("Error when creating StaticResourceHandler", e);
-                }
-            }
-            staticResourcesSet = true;
-        }
-    }
-
-    /**
-     * Configures location for static resources
-     *
-     * @param folder the location
-     */
-    public static void configureExternalStaticResources(String folder) {
-        if (!externalStaticResourcesSet) {
-            if (folder != null) {
-                try {
-                    ExternalResource resource = new ExternalResource(folder);
-                    if (resource.getFile().isDirectory()) {
-                        if (staticResourceHandlers == null) {
-                            staticResourceHandlers = new ArrayList<>();
-                        }
-                        staticResourceHandlers.add(new ExternalResourceHandler(folder, "index.html"));
-                        LOG.info("External StaticResourceHandler configured with folder = " + folder);
-                    } else {
-                        LOG.error("External Static resource location must be a folder");
-                    }
-                } catch (IOException e) {
-                    LOG.error("Error when creating external StaticResourceHandler", e);
-                }
-            }
-            externalStaticResourcesSet = true;
-        }
-    }
-
     @Override
     public void destroy() {
-        // ignore
+        if (application != null) {
+            application.destroy();
+        }
     }
 
 }

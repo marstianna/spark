@@ -38,7 +38,7 @@ public abstract class TemplateViewRouteImpl extends RouteImpl {
                                                TemplateViewRoute route,
                                                TemplateEngine engine) {
 
-        return create(path, SparkBase.DEFAULT_ACCEPT_TYPE, route, engine);
+        return create(path, SparkInstance.DEFAULT_ACCEPT_TYPE, route, engine);
     }
 
     /**
@@ -80,7 +80,7 @@ public abstract class TemplateViewRouteImpl extends RouteImpl {
 
 
     @Override
-    public String render(Object object) {
+    public Object render(Object object) {
         ModelAndView modelAndView = (ModelAndView) object;
         return render(modelAndView);
     }
@@ -102,6 +102,6 @@ public abstract class TemplateViewRouteImpl extends RouteImpl {
      * @param modelAndView object where object (mostly a POJO) and the name of the view to render are set.
      * @return message that it is sent to client.
      */
-    public abstract String render(ModelAndView modelAndView);
+    public abstract Object render(ModelAndView modelAndView);
 
 }
